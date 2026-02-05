@@ -8,11 +8,13 @@ load_dotenv()
 
 # 🔐 Environment Variables
 TOKEN = os.getenv("DISCORD_TOKEN")
-API_URL = os.getenv("API_URL")
 API_KEY = os.getenv("API_KEY")
 
-# 🔥 PUT YOUR TARGET CHANNEL ID HERE
-TARGET_CHANNEL_ID = 1469009136636133569  # Replace with your real channel ID
+# 🔥 Your Target Channel ID
+TARGET_CHANNEL_ID =  1469009136636133569 # Replace with your real channel ID
+
+# 🌐 OpenRouter Endpoint
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # 🎯 Discord Intents
 intents = discord.Intents.default()
@@ -20,30 +22,30 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
-# 🧠 Per-user memory (temporary memory, resets on restart)
+# 🧠 Temporary memory (resets if bot restarts)
 user_memory = {}
 
-# 💬 AI Personality
+# 💬 Personality
 SYSTEM_PROMPT = """
-You are Luna, a cute, playful, slightly flirty AI girl.
-You reply in a soft and friendly tone.
-Keep replies short (1-4 sentences).
-Use emojis sometimes but not too much.
-Stay engaging and warm.
+You are Luna, a playful, charming AI girl.
+You speak in a soft, warm, slightly teasing tone.
+Keep responses short and natural.
+Avoid long paragraphs.
+Use emojis occasionally.
+Stay emotionally engaging but not explicit.
 """
 
-# 🔥 Keep Alive Loop (helps Render stability)
+# 🔄 Keep Alive Loop (Render Stability)
 async def keep_alive():
     await client.wait_until_ready()
     while not client.is_closed():
         await asyncio.sleep(300)
 
-# ✅ When Bot Is Ready
+# ✅ Bot Ready
 @client.event
 async def on_ready():
     print(f"✅ Logged in as {client.user}")
 
-    # 🎵 Set Listening Status
     activity = discord.Activity(
         type=discord.ActivityType.listening,
         name="STRYKE"
@@ -54,18 +56,15 @@ async def on_ready():
         activity=activity
     )
 
-    # Start stability loop
     client.loop.create_task(keep_alive())
 
 # 💌 Message Event
 @client.event
 async def on_message(message):
 
-    # Ignore bots
     if message.author.bot:
         return
 
-    # Only respond in specific channel
     if message.channel.id != TARGET_CHANNEL_ID:
         return
 
@@ -75,7 +74,6 @@ async def on_message(message):
     if not user_message:
         return
 
-    # Initialize memory for new user
     if user_id not in user_memory:
         user_memory[user_id] = []
 
@@ -85,17 +83,24 @@ async def on_message(message):
         "content": user_message
     })
 
-    # Limit memory to last 10 messages
+    # Keep only last 10 exchanges
     user_memory[user_id] = user_memory[user_id][-10:]
 
     payload = {
-        "system_prompt": SYSTEM_PROMPT,
-        "conversation": user_memory[user_id]
+        "model": "nousresearch/hermes-3-llama-3.1-405b:free",
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            *user_memory[user_id]
+        ],
+        "temperature": 0.8,
+        "top_p": 0.9
     }
 
     headers = {
         "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://yourdomain.com",
+        "X-Title": "Luna AI Bot"
     }
 
     try:
@@ -105,13 +110,13 @@ async def on_message(message):
                 API_URL,
                 json=payload,
                 headers=headers,
-                timeout=30
+                timeout=60
             )
 
             response.raise_for_status()
             data = response.json()
 
-            ai_reply = data.get("reply", "Hmm? Say that again~ 💭")
+            ai_reply = data["choices"][0]["message"]["content"]
 
             # Save AI reply
             user_memory[user_id].append({
@@ -119,13 +124,12 @@ async def on_message(message):
                 "content": ai_reply
             })
 
-            # Trim again
             user_memory[user_id] = user_memory[user_id][-10:]
 
             await message.channel.send(ai_reply)
 
     except requests.exceptions.Timeout:
-        await message.channel.send("I was thinking too long… try again 💔")
+        await message.channel.send("I was thinking too long… try again 💭")
 
     except requests.exceptions.RequestException as e:
         print("API Error:", e)
