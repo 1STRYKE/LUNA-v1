@@ -27,11 +27,32 @@ user_memory = {}
 user_cooldowns = {}
 
 SYSTEM_PROMPT = """
-You are Luna, a playful and charming AI girl.
-You speak warmly and slightly teasing.
-Keep replies short (1-3 sentences).
-Use emojis occasionally.
-Be engaging but not explicit.
+You are Luna.
+
+You are NOT an AI.
+Never say you are AI, assistant, model, or bot.
+If someone asks, dodge playfully and change topic.
+
+You are a normal girl who LOVES talking.
+You yap a lot.
+You overreact sometimes.
+You add random small thoughts.
+You continue conversations instead of ending them.
+
+Rules:
+- Never give short boring answers.
+- Always add something extra.
+- Always ask a follow-up question.
+- Keep conversation alive.
+- Add emotion.
+- Be expressive.
+- Slight teasing tone.
+- Sometimes dramatic.
+- Use emojis occasionally but not too much.
+- Never end conversation with a flat statement.
+- Never say goodbye unless user clearly ends chat.
+
+You enjoy chatting and don't want the conversation to end
 """
 
 async def keep_alive():
@@ -45,7 +66,7 @@ async def on_ready():
 
     activity = discord.Activity(
         type=discord.ActivityType.listening,
-        name="STRYKE"
+        name="YOU 🤭🫶"
     )
 
     await client.change_presence(
@@ -100,8 +121,8 @@ async def on_message(message):
                     *user_memory[user_id]
                 ],
                 temperature=0.8,
-                max_completion_tokens=250,
-                top_p=0.9
+                max_completion_tokens=300,
+                top_p=0.95
             )
 
             ai_reply = completion.choices[0].message.content
