@@ -55,7 +55,7 @@ python-dotenv
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/luna-bot.git
+git clone https://github.com/1STRYKE/LUNA-v1
 cd luna-bot
 ```
 
